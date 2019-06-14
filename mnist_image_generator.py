@@ -3,9 +3,9 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pickle
 import argparse
-
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets('MNIST_data', one_hot = True)
+import tensorflow as tf
+# from tensorflow.examples.tutorials.mnist import input_data
+# mnist = input_data.read_data_sets('MNIST_data', one_hot = True)
 
 
 def display_image(arr):
@@ -42,13 +42,10 @@ def placement(nums, vals, m=3, size = 120, spread = 4, dim = 28, colour = False)
 def gen_images(n,m, random_m = False, display = False):
     #mnist dataset stuff
 
-    # mnist = tf.keras.datasets.mnist
-    # dataset_length = 60000
-
-    # train, test = mnist.load_data()
-    # dataset = tf.data.Dataset.from_tensor_slices((train[0], train[1]))
-    # dataset = dataset.shuffle(dataset_length)
-    # iterator = dataset.make_one_shot_iterator()
+    mnist = tf.keras.datasets.mnist
+    train, test = mnist.load_data()
+    trainx, trainy = train
+    dataset_length = len(train[0])
 
     images = []
     x_ = []
@@ -66,24 +63,23 @@ def gen_images(n,m, random_m = False, display = False):
         else:
             m1 = m
         while _m < m1:
-            
-            xs, ys = mnist.test.next_batch(1)
-            y = np.argmax(ys)
-            # xs, ys = iterator.get_next()
-            # y = np.int(ys)
+            # xs, ys = mnist.test.next_batch(1)
+            # y = np.argmax(ys)
+            sample = np.random.choice(dataset_length)
+            xs, y = trainx[sample], trainy[sample]
             while(y in objs):
-                # xs, ys = iterator.get_next()
-                # y = np.int(ys)
-                xs, ys = mnist.test.next_batch(1)
-                y = np.argmax(ys)
+                sample = np.random.choice(dataset_length)
+                xs, y = trainx[sample], trainy[sample]
+                # xs, ys = mnist.test.next_batch(1)
+                # y = np.argmax(ys)
             
             xs_list.append(xs)
             # xs_list.append(np.array(xs))
             objs.append(y)
             _m += 1
                 
-        batch_xs = np.vstack(xs_list)
-        # batch_xs = np.array(xs_list)
+        # batch_xs = np.vstack(xs_list)
+        batch_xs = np.array(xs_list)
         image, xs, ys = placement(batch_xs, objs, m=m1)
         if display:
             display_image(image).show()
