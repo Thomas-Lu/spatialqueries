@@ -2,7 +2,7 @@ import numpy as np
 import nengo
 from sklearn.metrics import mean_squared_error
 import nengo_spa as spa
-
+import warnings
 
 def power(s, e):
     x = np.fft.ifft(np.fft.fft(s.v) ** e).real
@@ -29,8 +29,8 @@ def spatial_dot(vec, xs, ys, x_axis, y_axis, swap = False):
         vs = np.transpose(vs)
     return vs
 
-# make unit vectors with angles not too small, seems to be not working?
-def make_good_unitary_new(dim, eps=1e-3, rng=np.random):
+# make good unitary that behaves better with exponents but doesn't behave well with closed for rectangle function
+def make_good_unitary(dim, eps=1e-3, rng=np.random):
     # created by arvoelke
     a = rng.rand((dim - 1) // 2)
     sign = rng.choice((-1, +1), len(a))
@@ -51,10 +51,10 @@ def make_good_unitary_new(dim, eps=1e-3, rng=np.random):
     v = v.real
     assert np.allclose(np.fft.fft(v), fv)
     assert np.allclose(np.linalg.norm(v), 1)
-    return spa.SemanticPointer(v)
+    return spa.SemanticPointer(v).unitary()
 
-#old make good unitary function
-def make_good_unitary(D, eps=np.pi*1e-3, n_trials=10000):
+#make good unitary, compatible with closed form rectangle
+def make_good_unitary_old(D, eps=np.pi*1e-3, n_trials=10000):
     for _ in range(n_trials):
         d = spa.Vocabulary(D)
         sp = d.create_pointer().unitary()
@@ -64,24 +64,65 @@ def make_good_unitary(D, eps=np.pi*1e-3, n_trials=10000):
     raise RuntimeError("bleh")
 
 #create object and axis vectors
-def create_vectors(objs, D, axis = {'X', 'Y'}):
-    init_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
-    vec_dic = {}
+# def create_vectors(objs, D, axis = {'X', 'Y'}):
+#     init_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
+#     vec_dic = {}
+
+#     for a in axis:
+#         ax = make_good_unitary(D)
+
+#         init_dic.add(a, ax)
+#         vec_dic[a] = ax
+
+#     # for item in vecs:
+#     #     init_dic.add(item, init_dic.create_pointer(unitary =True, attempts=5000))
+
+#     #using one dictionary for both to reduce similarity
+#     for item in objs:
+#         init_dic.add(item, init_dic.create_pointer(attempts=5000))
+
+#     obj_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
+#     for item in objs:
+#         obj_dic.add(item, init_dic[item].v)
+
+#     return obj_dic, vec_dic
+
+def create_vectors(objs, D, axis = {'X', 'Y'}, max_similarity=0.01, attempts = 1000):
+    init_dic = spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
+    for a in axis:
+        if len(init_dic) > 0:
+            for i in range(attempts):
+                ax = make_good_unitary(D)
+                if np.max(np.abs(init_dic.dot(ax))) < 0.01:
+                    init_dic.add(a, ax.v)
+                    break
+            else:
+                warnings.warn(
+                        'Could not create a semantic pointer with '
+                        'max_similarity=%1.2f'
+                        % (max_similarity))
+        else:
+            init_dic.add(a, make_good_unitary(D))
+
+    for item in objs:
+        for i in range(attempts):
+            v = np.random.randn(D)
+            v /= np.linalg.norm(v)
+            if np.max(np.abs(init_dic.dot(v))) < max_similarity:
+                init_dic.add(item, v)
+                break
+        else:
+            warnings.warn(
+                'Could not create a semantic pointer with '
+                'max_similarity=%1.2f'
+                % (max_similarity))
+
+    vec_dic =  spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
+    obj_dic =  spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
 
     for a in axis:
-        ax = make_good_unitary(D)
-
-        init_dic.add(a, ax)
-        vec_dic[a] = ax
-
-    # for item in vecs:
-    #     init_dic.add(item, init_dic.create_pointer(unitary =True, attempts=5000))
-
-    #using one dictionary for both to reduce similarity
-    for item in objs:
-        init_dic.add(item, init_dic.create_pointer(attempts=5000))
-
-    obj_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
+        vec_dic.add(a, init_dic[a].v)
+    
     for item in objs:
         obj_dic.add(item, init_dic[item].v)
 

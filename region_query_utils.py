@@ -1,7 +1,7 @@
 import numpy as np
 import nengo_spa as spa
 
-from utils import power
+from utils import power, encode_point, spatial_dot
 
 from scipy.signal import correlate
 
@@ -13,7 +13,7 @@ def direction_quad(x,y):
     return tuple(np.stack([x_,y_],1).astype(int).T)
 
 #closed form function to generate rectangular region SSP
-def generate_rectangle_region(x_range, y_range, X, Y):
+def generate_rectangle_region(x_range, y_range, X, Y, resolution = 100):
     fft_X = np.fft.fft(X.v)
     fft_Y = np.fft.fft(Y.v)
 
@@ -21,17 +21,24 @@ def generate_rectangle_region(x_range, y_range, X, Y):
     gamma = np.angle(fft_Y)
     assert np.allclose(np.abs(fft_X), 1)
     assert np.allclose(np.abs(fft_Y), 1)
+    if any(phi == 0):
+        # can't divide, just use summation
+        region_analytic = np.zeros_like(X.v)
+        for x in np.linspace(*x_range, resolution):
+            for y in np.linspace(*y_range, resolution):
+                region_analytic += encode_point(x, y, X, Y).v
+        return spa.SemanticPointer(region_analytic/np.max(spatial_dot(region_analytic, np.linspace(*x_range,resolution/5), np.linspace(*y_range,resolution/5),X, Y)))
+    else:
+        # (FYI this is Euler's formula as we are applying it implicitly)
+        # pi = phi * x1
+        # assert np.allclose(fft_X ** x1, np.cos(pi) + 1j * np.sin(pi))
+        INVPHI = spa.SemanticPointer(np.fft.ifft(1j / phi))
+        INVGAMMA = spa.SemanticPointer(np.fft.ifft(1j / gamma))
 
-    # (FYI this is Euler's formula as we are applying it implicitly)
-    # pi = phi * x1
-    # assert np.allclose(fft_X ** x1, np.cos(pi) + 1j * np.sin(pi))
-    INVPHI = spa.SemanticPointer(np.fft.ifft(1j / phi))
-    INVGAMMA = spa.SemanticPointer(np.fft.ifft(1j / gamma))
+        region_algebraic = (((power(X, x_range[1]) - power(X, x_range[0])) * INVPHI) *
+                            (((power(Y, y_range[1]) - power(Y, y_range[0])) * INVGAMMA)))
+        return region_algebraic
 
-    region_algebraic = (((power(X, x_range[1]) - power(X, x_range[0])) * INVPHI) *
-                        (((power(Y, y_range[1]) - power(Y, y_range[0])) * INVGAMMA)))
-    
-    return region_algebraic
 
 #generate space lookup table
 def generate_space_table(xs,ys,dim,X,Y):

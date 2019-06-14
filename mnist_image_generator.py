@@ -45,6 +45,7 @@ def gen_images(n,m, random_m = False, display = False):
     mnist = tf.keras.datasets.mnist
     train, test = mnist.load_data()
     trainx, trainy = train
+    trainx = trainx.astype('float32')/255
     dataset_length = len(train[0])
 
     images = []
