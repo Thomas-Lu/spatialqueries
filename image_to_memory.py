@@ -71,60 +71,60 @@ def encode_memory_shape(pred_obj_list, xs, ys, obj_vectors, axis_vec,shape,n,m, 
     memory_data['individual_obj_vectors'] = individual_obj_vectors
     return memory_data
     
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--n', type=int, default=5000)
-    parser.add_argument('--m', type=int, default=3)
-    parser.add_argument('--imdim', type=int, default=28)
-    parser.add_argument('--savefile', type=str, default='data512')
-    parser.add_argument('--imagefile', type=str, default='generated_images')
-    parser.add_argument('--vectorfile', type=str, default='image_and_memory')
-    parser.add_argument('--modelfile', type=str, default='mnist_net')
-    args = parser.parse_args()
+# def main():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--n', type=int, default=5000)
+#     parser.add_argument('--m', type=int, default=3)
+#     parser.add_argument('--imdim', type=int, default=28)
+#     parser.add_argument('--savefile', type=str, default='data512')
+#     parser.add_argument('--imagefile', type=str, default='generated_images')
+#     parser.add_argument('--vectorfile', type=str, default='image_and_memory')
+#     parser.add_argument('--modelfile', type=str, default='mnist_net')
+#     args = parser.parse_args()
 
-    n = args.n
-    m = args.m
-    im_dim = args.imdim
-    savefile = args.savefile
-    imagefile = args.imagefile
-    vectorfile = args.vectorfile
-    modelfile = args.modelfile
+#     n = args.n
+#     m = args.m
+#     im_dim = args.imdim
+#     savefile = args.savefile
+#     imagefile = args.imagefile
+#     vectorfile = args.vectorfile
+#     modelfile = args.modelfile
 
-    # Get a batch of n random images with m digits
-    model = keras.models.load_model(modelfile+'.h5')
-
-
-    objs = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"]
-
-    mnist_datafile = imagefile+'.p'
-    img_data = pickle.load(open(mnist_datafile,'rb'))
-    images = img_data['images']
-    xs = img_data['x']
-    ys = img_data['y']
-    obj_list = img_data['obj_list']
-
-    pred_obj_list = decode_image(images, xs, ys, im_dim, model)
-
-    spa_datafile = vectorfile+'.p'
-    spa_data = pickle.load(open(spa_datafile,'rb'))
-    axis_vec = spa_data['axis_vec']
-    obj_dict = spa_data['obj_dict']
-
-    objs = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"]
-    obj_vectors = np.stack([obj_dict[_] for _ in objs])
-
-    size = 120
-    lim = 5
-
-    memory_data = encode_memory(pred_obj_list,xs,ys,obj_vectors,axis_vec,n,m)
-    memory_data['obj_vectors'] = obj_vectors
-    memory_data['objs'] = objs
-    memory_data['axis_vec'] = axis_vec
-    memory_data['obj_dict'] = obj_dict
-    memory_data['pred_obj_list'] = pred_obj_list
-
-    pickle.dump(memory_data, open(savefile+".p", "wb"))
+#     # Get a batch of n random images with m digits
+#     model = keras.models.load_model(modelfile+'.h5')
 
 
-if __name__ == '__main__':
-    main()
+#     objs = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"]
+
+#     mnist_datafile = imagefile+'.p'
+#     img_data = pickle.load(open(mnist_datafile,'rb'))
+#     images = img_data['images']
+#     xs = img_data['x']
+#     ys = img_data['y']
+#     obj_list = img_data['obj_list']
+
+#     pred_obj_list = decode_image(images, xs, ys, im_dim, model)
+
+#     spa_datafile = vectorfile+'.p'
+#     spa_data = pickle.load(open(spa_datafile,'rb'))
+#     axis_vec = spa_data['axis_vec']
+#     obj_dict = spa_data['obj_dict']
+
+#     objs = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"]
+#     obj_vectors = np.stack([obj_dict[_] for _ in objs])
+
+#     size = 120
+#     lim = 5
+
+#     memory_data = encode_memory(pred_obj_list,xs,ys,obj_vectors,axis_vec,n,m)
+#     memory_data['obj_vectors'] = obj_vectors
+#     memory_data['objs'] = objs
+#     memory_data['axis_vec'] = axis_vec
+#     memory_data['obj_dict'] = obj_dict
+#     memory_data['pred_obj_list'] = pred_obj_list
+
+#     pickle.dump(memory_data, open(savefile+".p", "wb"))
+
+
+# if __name__ == '__main__':
+#     main()
