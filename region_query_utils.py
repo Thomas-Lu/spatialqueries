@@ -28,8 +28,8 @@ def generate_rectangle_region(x_range, y_range, X, Y):
     phi_mask = phi != 0
     gamma_mask = gamma != 0
 
-    x_integral = np.zeros_like(phi)
-    y_integral = np.zeros_like(phi)
+    x_integral = np.zeros_like(fft_X)
+    y_integral = np.zeros_like(fft_Y)
 
     x_integral[phi_mask] = np.fft.fft((power(X, x_range[1]) - power(X, x_range[0])).v)[phi_mask] * 1j / phi[phi_mask]
     x_integral[np.logical_not(phi_mask)] = x_range[1]-x_range[0]
