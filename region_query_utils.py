@@ -13,7 +13,9 @@ def direction_quad(x,y):
     return tuple(np.stack([x_,y_],1).astype(int).T)
 
 #closed form function to generate rectangular region SSP
-def generate_rectangle_region(x_range, y_range, X, Y, resolution = 100):
+#ranges are 2-tuples, X & Y are axis ssps
+def generate_rectangle_region(x_range, y_range, X, Y):
+    #integrating eulor's formula e^ikx from a to b is i(e^ika - e^ikb)/k where e^ik is the axis vector and k is the angle of the vector
     fft_X = np.fft.fft(X.v)
     fft_Y = np.fft.fft(Y.v)
 
@@ -21,24 +23,22 @@ def generate_rectangle_region(x_range, y_range, X, Y, resolution = 100):
     gamma = np.angle(fft_Y)
     assert np.allclose(np.abs(fft_X), 1)
     assert np.allclose(np.abs(fft_Y), 1)
-    if any(phi == 0):
-        # can't divide, just use summation
-        region_analytic = np.zeros_like(X.v)
-        for x in np.linspace(*x_range, resolution):
-            for y in np.linspace(*y_range, resolution):
-                region_analytic += encode_point(x, y, X, Y).v
-        return spa.SemanticPointer(region_analytic/np.max(spatial_dot(region_analytic, np.linspace(*x_range,resolution/5), np.linspace(*y_range,resolution/5),X, Y)))
-    else:
-        # (FYI this is Euler's formula as we are applying it implicitly)
-        # pi = phi * x1
-        # assert np.allclose(fft_X ** x1, np.cos(pi) + 1j * np.sin(pi))
-        INVPHI = spa.SemanticPointer(np.fft.ifft(1j / phi))
-        INVGAMMA = spa.SemanticPointer(np.fft.ifft(1j / gamma))
 
-        region_algebraic = (((power(X, x_range[1]) - power(X, x_range[0])) * INVPHI) *
-                            (((power(Y, y_range[1]) - power(Y, y_range[0])) * INVGAMMA)))
-        return region_algebraic
+    #masks to seperate when angle is 0, then you're integrating a constant so it's simply b-a
+    phi_mask = phi != 0
+    gamma_mask = gamma != 0
 
+    x_integral = np.zeros_like(phi)
+    y_integral = np.zeros_like(phi)
+
+    x_integral[phi_mask] = np.fft.fft((power(X, x_range[1]) - power(X, x_range[0])).v)[phi_mask] * 1j / phi[phi_mask]
+    x_integral[np.logical_not(phi_mask)] = x_range[1]-x_range[0]
+
+    y_integral[gamma_mask] = np.fft.fft((power(Y, y_range[1]) - power(Y, y_range[0])).v)[gamma_mask] * 1j / gamma[gamma_mask]
+    y_integral[np.logical_not(gamma_mask)] = y_range[1]-y_range[0]
+
+    rectangle = spa.SemanticPointer(np.fft.ifft(x_integral * y_integral))
+    return rectangle
 
 #generate space lookup table
 def generate_space_table(xs,ys,dim,X,Y):
@@ -197,3 +197,30 @@ def predict_double_query(obj_loc_memory, obj_memory, query_obj, dirs, query_obj2
     preds = dots * extract_objs
     obj_preds = np.argmax(preds, axis = 1)
     return obj_preds
+
+#old generate function
+def generate_rectangle_region_old(x_range, y_range, X, Y, resolution = 100):
+    fft_X = np.fft.fft(X.v)
+    fft_Y = np.fft.fft(Y.v)
+
+    phi = np.angle(fft_X)
+    gamma = np.angle(fft_Y)
+    assert np.allclose(np.abs(fft_X), 1)
+    assert np.allclose(np.abs(fft_Y), 1)
+    if any(phi == 0):
+        # can't divide, just use summation
+        region_analytic = np.zeros_like(X.v)
+        for x in np.linspace(*x_range, resolution):
+            for y in np.linspace(*y_range, resolution):
+                region_analytic += encode_point(x, y, X, Y).v
+        return spa.SemanticPointer(region_analytic/np.max(spatial_dot(region_analytic, np.linspace(*x_range,resolution/5), np.linspace(*y_range,resolution/5),X, Y)))
+    else:
+        # (FYI this is Euler's formula as we are applying it implicitly)
+        # pi = phi * x1
+        # assert np.allclose(fft_X ** x1, np.cos(pi) + 1j * np.sin(pi))
+        INVPHI = spa.SemanticPointer(np.fft.ifft(1j / phi))
+        INVGAMMA = spa.SemanticPointer(np.fft.ifft(1j / gamma))
+
+        region_algebraic = (((power(X, x_range[1]) - power(X, x_range[0])) * INVPHI) *
+                            (((power(Y, y_range[1]) - power(Y, y_range[0])) * INVGAMMA)))
+        return region_algebraic
