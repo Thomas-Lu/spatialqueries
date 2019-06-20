@@ -63,70 +63,70 @@ def make_good_unitary_old(D, eps=np.pi*1e-3, n_trials=10000):
             return spa.SemanticPointer(sp.v)
     raise RuntimeError("bleh")
 
-#create object and axis vectors
-# def create_vectors(objs, D, axis = {'X', 'Y'}):
-#     init_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
-#     vec_dic = {}
+# create object and axis vectors
+def create_vectors(objs, D, axis = {'X', 'Y'}):
+    init_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
+    vec_dic = {}
 
-#     for a in axis:
-#         ax = make_good_unitary(D)
-
-#         init_dic.add(a, ax)
-#         vec_dic[a] = ax
-
-#     # for item in vecs:
-#     #     init_dic.add(item, init_dic.create_pointer(unitary =True, attempts=5000))
-
-#     #using one dictionary for both to reduce similarity
-#     for item in objs:
-#         init_dic.add(item, init_dic.create_pointer(attempts=5000))
-
-#     obj_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
-#     for item in objs:
-#         obj_dic.add(item, init_dic[item].v)
-
-#     return obj_dic, vec_dic
-
-def create_vectors(objs, D, axis = {'X', 'Y'}, max_similarity=0.01, attempts = 1000):
-    init_dic = spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
     for a in axis:
-        if len(init_dic) > 0:
-            for i in range(attempts):
-                ax = make_good_unitary(D)
-                if np.max(np.abs(init_dic.dot(ax))) < 0.01:
-                    init_dic.add(a, ax.v)
-                    break
-            else:
-                warnings.warn(
-                        'Could not create a semantic pointer with '
-                        'max_similarity=%1.2f'
-                        % (max_similarity))
-        else:
-            init_dic.add(a, make_good_unitary(D))
+        ax = make_good_unitary(D)
 
+        init_dic.add(a, ax)
+        vec_dic[a] = ax
+
+    # for item in vecs:
+    #     init_dic.add(item, init_dic.create_pointer(unitary =True, attempts=5000))
+
+    #using one dictionary for both to reduce similarity
     for item in objs:
-        for i in range(attempts):
-            v = np.random.randn(D)
-            v /= np.linalg.norm(v)
-            if np.max(np.abs(init_dic.dot(v))) < max_similarity:
-                init_dic.add(item, v)
-                break
-        else:
-            warnings.warn(
-                'Could not create a semantic pointer with '
-                'max_similarity=%1.2f'
-                % (max_similarity))
+        init_dic.add(item, init_dic.create_pointer(attempts=5000))
 
-    vec_dic =  spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
-    obj_dic =  spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
-
-    for a in axis:
-        vec_dic.add(a, init_dic[a].v)
-    
+    obj_dic = spa.Vocabulary(dimensions = D, max_similarity = 0.01)
     for item in objs:
         obj_dic.add(item, init_dic[item].v)
 
     return obj_dic, vec_dic
+
+# def create_vectors(objs, D, axis = {'X', 'Y'}, max_similarity=0.01, attempts = 1000):
+#     init_dic = spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
+#     for a in axis:
+#         if len(init_dic) > 0:
+#             for i in range(attempts):
+#                 ax = make_good_unitary(D)
+#                 if np.max(np.abs(init_dic.dot(ax))) < 0.01:
+#                     init_dic.add(a, ax.v)
+#                     break
+#             else:
+#                 warnings.warn(
+#                         'Could not create a semantic pointer with '
+#                         'max_similarity=%1.2f'
+#                         % (max_similarity))
+#         else:
+#             init_dic.add(a, make_good_unitary(D))
+
+#     for item in objs:
+#         for i in range(attempts):
+#             v = np.random.randn(D)
+#             v /= np.linalg.norm(v)
+#             if np.max(np.abs(init_dic.dot(v))) < max_similarity:
+#                 init_dic.add(item, v)
+#                 break
+#         else:
+#             warnings.warn(
+#                 'Could not create a semantic pointer with '
+#                 'max_similarity=%1.2f'
+#                 % (max_similarity))
+
+#     vec_dic =  spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
+#     obj_dic =  spa.Vocabulary(dimensions = D, max_similarity = max_similarity)
+
+#     for a in axis:
+#         vec_dic.add(a, init_dic[a].v)
+    
+#     for item in objs:
+#         obj_dic.add(item, init_dic[item].v)
+
+#     return obj_dic, vec_dic
 
 def generate_item_memory(dim, n_items, limits, x_axis_vec, y_axis_vec, normalize_memory=True):
     """
