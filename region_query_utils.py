@@ -31,14 +31,24 @@ def generate_rectangle_region(x_range, y_range, X, Y):
     x_integral = np.zeros_like(fft_X)
     y_integral = np.zeros_like(fft_Y)
 
-    x_integral[phi_mask] = np.fft.fft((power(X, x_range[1]) - power(X, x_range[0])).v)[phi_mask] * 1j / phi[phi_mask]
+    x_integral[phi_mask] = (fft_X ** x_range[1] - fft_X ** x_range[0])[phi_mask] * 1j / phi[phi_mask]
     x_integral[np.logical_not(phi_mask)] = x_range[1]-x_range[0]
 
-    y_integral[gamma_mask] = np.fft.fft((power(Y, y_range[1]) - power(Y, y_range[0])).v)[gamma_mask] * 1j / gamma[gamma_mask]
+    y_integral[gamma_mask] = (fft_Y ** y_range[1] - fft_Y ** y_range[0])[gamma_mask] * 1j / gamma[gamma_mask]
     y_integral[np.logical_not(gamma_mask)] = y_range[1]-y_range[0]
 
     rectangle = spa.SemanticPointer(np.fft.ifft(x_integral * y_integral))
     return rectangle
+
+def convert_pixels(img, X, Y, spa_range = (-5,5)):
+    size = spa_range[1]-spa_range[0]
+    l, w = img.shape
+    spa = np.zeros_like(X.v)
+    for i in range(l):
+        for j in range(w):
+            if img[i,j] > 0:
+                spa += encode_point(i*size/l+spa_range[0],j*size/w+spa_range[0],X,Y).v * img[i,j]
+    return spa
 
 #generate space lookup table
 def generate_space_table(xs,ys,dim,X,Y):
